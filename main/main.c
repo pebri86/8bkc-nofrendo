@@ -96,7 +96,7 @@ int app_main(void) {
 			rom_fd=appfsOpen(rom);
 		} else {
 			kcugui_init();
-			rom_fd=kcugui_filechooser("*.nes,*.bin", "Select ROM", fccallback, NULL, 0);
+			rom_fd=kcugui_filechooser("*.nes", "Select ROM", fccallback, NULL, 0);
 			kcugui_deinit();
 		}
 

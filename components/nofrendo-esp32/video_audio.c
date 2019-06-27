@@ -187,7 +187,6 @@ static void free_write(int num_dirties, rect_t *dirty_rects) {
    bmp_destroy(&myBitmap);
 }
 
-
 static void custom_blit(bitmap_t *bmp, int num_dirties, rect_t *dirty_rects) {
 	xQueueSend(vidQueue, &bmp, 0);
 	do_audio_frame();
@@ -199,6 +198,7 @@ const uint8_t kernel[6][3]={
 	{12, 2, 2}, {2, 12, 2}, {2, 2, 12},
 	{6, 1, 1}, {1, 6, 1}, {1, 1, 6}
 };
+
 
 static uint16_t get_pix_around(char **pic, int py, int px, int halfIsUpper) {
 	int r=0, g=0, b=0;
@@ -223,18 +223,22 @@ static uint16_t get_pix_around(char **pic, int py, int px, int halfIsUpper) {
 //Scale: hor div by 3, ver div by 3.5.
 static void videoTask(void *arg) {
 	int x, y;
-	oledfb=malloc(KC_SCREEN_W*KC_SCREEN_H*2);
+	oledfb=heap_caps_malloc(KC_SCREEN_W*KC_SCREEN_H*2, MALLOC_CAP_DMA | MALLOC_CAP_8BIT);//malloc(KC_SCREEN_W*KC_SCREEN_H*2);
 	bitmap_t *bmp=NULL;
 	while(1) {
 		xQueueReceive(vidQueue, &bmp, portMAX_DELAY);
 		const uint8_t **pic=(const uint8_t **)bmp->line;
 		uint16_t *fbp=oledfb;
+		int x_ratio = (int) ((DEFAULT_WIDTH<<16)/KC_SCREEN_W) + 1;
+		int y_ratio = (int) ((DEFAULT_HEIGHT<<16)/KC_SCREEN_H) + 1;
 		for (int y=0; y<KC_SCREEN_H; y++) {
-			int ny=(y*7)/2;
-			int nx=0;
-			for (int x=0; x<KC_SCREEN_W; x++) {
-				*fbp++=get_pix_around(pic, ny, nx, y&1);
-				nx+=3;
+			//int ny=(y*7)/2;
+			//int nx=0;
+			for (int x=0; x<KC_SCREEN_W; x++) {				
+				int x2 = ((x*x_ratio)>>16);
+    			int y2 = ((y*y_ratio)>>16);
+				*fbp++=get_pix_around(pic, y2, x2, y&1);
+				//nx+=3;
 			}
 		}
 		kchal_send_fb(oledfb);
